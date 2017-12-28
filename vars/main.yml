@@ -1,0 +1,18 @@
+---
+# vars file for ansible-aws-vpc
+
+vpc:
+  #Name of VPC 
+  aws_vpc_name: "example-vpc"
+  #AWS region for example
+  aws_vpc_region: "eu-central-1"
+  #AWS availability zones in region for example
+  aws_vpc_az_a: "eu-central-1a"
+  aws_vpc_az_b: "eu-central-1b"
+  aws_vpc_az_c: "eu-central-1c"
+  #AWS VPC cidr block for example
+  aws_vpc_cidrblock: "10.0.0.0/16"
+  #AWS VPC subnets in availability zone from vpc cidr block
+  aws_vpc_subnet_az_a: "10.0.0.0/24"
+  aws_vpc_subnet_az_b: "10.0.1.0/24"
+  aws_vpc_subnet_az_c: "10.0.2.0/24"

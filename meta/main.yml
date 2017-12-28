@@ -1,0 +1,6 @@
+galaxy_info:
+  author: Sergey Ovsienko so@unicanova.com
+  description: Simple Ansible role for management AWS VPC
+  company: UnicaNova https://unicanova.com/
+  license: license (MIT)
+  min_ansible_version: 2.4
