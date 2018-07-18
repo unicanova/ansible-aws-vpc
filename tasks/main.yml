@@ -2,6 +2,8 @@
 # tasks file for ansible-aws-vpc
 - name: Create project VPC
   ec2_vpc_net:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
     name: "{{ vpc.aws_vpc_name }}"
     cidr_block: "{{ vpc.aws_vpc_cidrblock }}"
     region: "{{ vpc.aws_vpc_region }}"
@@ -13,6 +15,8 @@
     
 - name: Create subnet
   ec2_vpc_subnet:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
     region: "{{ vpc.aws_vpc_region }}"
     state: present
     vpc_id: "{{ vpc_result.vpc.id }}"
@@ -32,6 +36,8 @@
 - name: Create igw 
   ec2_vpc_igw:
     region: "{{ vpc.aws_vpc_region }}"
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
     vpc_id: "{{ vpc_result.vpc.id }}"
     state: present
   register: igw_result
@@ -40,6 +46,8 @@
 
 - name: Setup subnet route table
   ec2_vpc_route_table:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
     vpc_id: "{{ vpc_result.vpc.id }}"
     region: "{{ vpc.aws_vpc_region }}"
     tags:
@@ -62,6 +70,8 @@
 - name: Default SG for prod subnet
   ec2_group:
     name: "{{ vpc.sg }}"
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
     description: an prod EC2 group
     vpc_id: "{{ vpc_result.vpc.id }}"
     region: "{{ vpc.aws_vpc_region }}"
