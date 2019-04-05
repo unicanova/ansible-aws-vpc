@@ -1,79 +1,93 @@
 ---
 # tasks file for ansible-aws-vpc
-
-  - name: Create project VPC
-      ec2_vpc_net:
-        name: "{{ vpc.aws_vpc_name }}"
-        cidr_block: "{{ vpc.aws_vpc_cidrblock }}"
-        region: "{{ vpc.aws_vpc_region }}"
-        tenancy: default
-        state: present
-      register: vpc_result
-      tags:
-        - vpc
+- name: Create project VPC
+  ec2_vpc_net:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    name: "{{ vpc.aws_vpc_name }}"
+    cidr_block: "{{ vpc.aws_vpc_cidrblock }}"
+    region: "{{ vpc.aws_vpc_region }}"
+    tenancy: default
+    state: present
+  register: vpc_result
+  tags:
+    - vpc
     
-    - name: Create subnet
-      ec2_vpc_subnet:
-        region: "{{ vpc.aws_vpc_region }}"
-        state: present
-        vpc_id: "{{ vpc_result.vpc.id }}"
-        az: "{{ item.name }}"
-        cidr: "{{ item.value }}"
-        map_public: true
-        resource_tags:
-          Name: "Subnet {{ item.tag }}"
-      with_items:
-        - { name: "{{ vpc.aws_vpc_az_a }}", value: "{{ vpc.aws_vpc_subnet_az_a }}", tag: "{{ vpc.aws_vpc_subnet_az_a }}" }
-        - { name: "{{ vpc.aws_vpc_az_b }}", value: "{{ vpc.aws_vpc_subnet_az_b }}", tag: "{{ vpc.aws_vpc_subnet_az_b }}" }
-        - { name: "{{ vpc.aws_vpc_az_c }}", value: "{{ vpc.aws_vpc_subnet_az_c }}", tag: "{{ vpc.aws_vpc_subnet_az_c }}" }
-      register: subnet_result
-      tags:
-         - subnet
+- name: Create subnet
+  ec2_vpc_subnet:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ vpc.aws_vpc_region }}"
+    state: present
+    vpc_id: "{{ vpc_result.vpc.id }}"
+    az: "{{ item.name }}"
+    cidr: "{{ item.value }}"
+    map_public: true
+    resource_tags:
+      Name: "Subnet {{ item.tag }}"
+  with_items:
+    - { name: "{{ vpc.aws_vpc_az_a }}", value: "{{ vpc.aws_vpc_subnet_az_a }}", tag: "{{ vpc.aws_vpc_subnet_az_a }}" }
+    - { name: "{{ vpc.aws_vpc_az_b }}", value: "{{ vpc.aws_vpc_subnet_az_b }}", tag: "{{ vpc.aws_vpc_subnet_az_b }}" }
+    - { name: "{{ vpc.aws_vpc_az_c }}", value: "{{ vpc.aws_vpc_subnet_az_c }}", tag: "{{ vpc.aws_vpc_subnet_az_c }}" }
+  register: subnet_result
+  tags:
+    - subnet
 
-    - name: Create igw 
-      ec2_vpc_igw:
-        region: "{{ vpc.aws_vpc_region }}"
-        vpc_id: "{{ vpc_result.vpc.id }}"
-        state: present
-      register: igw_result
-      tags:
-        - igw
+- name: Create igw 
+  ec2_vpc_igw:
+    region: "{{ vpc.aws_vpc_region }}"
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    vpc_id: "{{ vpc_result.vpc.id }}"
+    state: present
+  register: igw_result
+  tags:
+    - igw
 
-    - name: Setup subnet route table
-      ec2_vpc_route_table:
-        vpc_id: "{{ vpc_result.vpc.id }}"
-        region: "{{ vpc.aws_vpc_region }}"
-        tags:
-          Name: Public
-        subnets:
-          - "{{ vpc.aws_vpc_subnet_az_a }}"
-          - "{{ vpc.aws_vpc_subnet_az_b }}"
-          - "{{ vpc.aws_vpc_subnet_az_c }}"
-        routes:
-          - dest: 0.0.0.0/0
-            gateway_id: "{{ igw_result.gateway_id }}"
-      register: rt_result
-      tags:
-        - rt
+- name: Setup subnet route table
+  ec2_vpc_route_table:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    vpc_id: "{{ vpc_result.vpc.id }}"
+    region: "{{ vpc.aws_vpc_region }}"
+    tags:
+      Name: Public
+    subnets:
+      - "{{ vpc.aws_vpc_subnet_az_a }}"
+      - "{{ vpc.aws_vpc_subnet_az_b }}"
+      - "{{ vpc.aws_vpc_subnet_az_c }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ igw_result.gateway_id }}"
+  register: rt_result
+  tags:
+    - rt
 
-    - name: Default SG for prod subnet
-      ec2_group:
-        name: Prod
-        description: an prod EC2 group
-        vpc_id: "{{ vpc_result.vpc.id }}"
-        region: "{{ vpc.aws_vpc_region }}"
-        rules:
-          - proto: tcp
-            from_port: 80
-            to_port: 80
-            cidr_ip: 0.0.0.0/0
-          - proto: tcp
-            from_port: 22
-            to_port: 22
-            cidr_ip: 0.0.0.0/0
-          - proto: tcp
-            from_port: 443
-            to_port: 443
-            cidr_ip: 0.0.0.0/0
-          - proto: all
-            cidr_ip: "{{ vpc.aws_vpc_cidrblock }}"
+- name: Set vpc_id
+  set_fact: 
+    vpc_id: "{{ vpc_result.vpc.id }}"
+
+- name: Default SG for prod subnet
+  ec2_group:
+    name: "{{ vpc.sg }}"
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    description: an prod EC2 group
+    vpc_id: "{{ vpc_result.vpc.id }}"
+    region: "{{ vpc.aws_vpc_region }}"
+    rules:
+      - proto: tcp
+        from_port: 80
+        to_port: 80
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 443
+        to_port: 443
+        cidr_ip: 0.0.0.0/0
+      - proto: all
+        cidr_ip: "{{ vpc.aws_vpc_cidrblock }}"
+  register: secgrp
